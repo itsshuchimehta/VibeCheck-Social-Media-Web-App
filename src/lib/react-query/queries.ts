@@ -16,6 +16,7 @@ import {
   getLikedPosts,
   getPostById,
   getRecentPosts,
+  getSavedPosts,
   getUserById,
   getUserPosts,
   getUsers,
@@ -235,7 +236,13 @@ export const useGetLikedPosts = (userId: string) => {
     enabled: !!userId,
   });
 };
-
+export const useGetSavedPosts = (userId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_RECENT_POSTS, userId],
+    queryFn: () => getSavedPosts(userId),
+    enabled: !!userId,
+  });
+};
 // ============================================================
 // USER QUERIES
 // ============================================================
@@ -284,36 +291,6 @@ export const useSearchUsers = (searchTerm: string) => {
     enabled: !!searchTerm,
   });
 };
-
-// export const useFollowUser = () => {
-//   const queryClient = useQueryClient();
-
-//   return useMutation({
-//     mutationFn: ({
-//       currentUserId,
-//       userIdToFollow,
-//       followingArray,
-//       followerArray,
-//     }: {
-//       currentUserId: string;
-//       userIdToFollow: string;
-//       followingArray: string[];
-//       followerArray: string[];
-//     }) =>
-//       followUser(currentUserId, userIdToFollow, followingArray, followerArray),
-//     onSuccess: () => {
-//       queryClient.invalidateQueries({
-//         queryKey: [QUERY_KEYS.GET_CURRENT_USER],
-//       });
-//       queryClient.invalidateQueries({
-//         queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
-//       });
-//       queryClient.invalidateQueries({
-//         queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
-//       });
-//     },
-//   });
-// };
 
 export const useFollowUser = () => {
   const queryClient = useQueryClient();

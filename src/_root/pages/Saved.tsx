@@ -1,19 +1,14 @@
-import { Models } from "appwrite";
-
 import { GridPostList, Loader } from "@/components/shared";
-import { useGetCurrentUser } from "@/lib/react-query/queries";
+import { useUserContext } from "@/context/AuthContext";
+import { useGetSavedPosts } from "@/lib/react-query/queries";
 
 const Saved = () => {
-  const { data: currentUser } = useGetCurrentUser();
+  const { user } = useUserContext();
 
-  const savePosts = currentUser?.save
-    .map((savePost: Models.Document) => ({
-      ...savePost.post,
-      creator: {
-        imageUrl: currentUser.imageUrl,
-      },
-    }))
-    .reverse();
+  // 1. Use the new hook instead of useGetCurrentUser
+  const { data: savedPosts, isLoading } = useGetSavedPosts(user.id);
+
+  const savePosts = savedPosts?.documents || [];
 
   return (
     <div className="saved-container">
@@ -28,7 +23,7 @@ const Saved = () => {
         <h2 className="h3-bold md:h2-bold text-left w-full">Saved Posts</h2>
       </div>
 
-      {!currentUser ? (
+      {isLoading ? (
         <Loader />
       ) : (
         <ul className="w-full flex justify-center max-w-5xl gap-9">

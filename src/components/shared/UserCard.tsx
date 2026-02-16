@@ -8,13 +8,15 @@ type UserCardProps = {
 };
 
 const UserCard = ({ user }: UserCardProps) => {
-
-
   return (
     <div className="user-card">
       <Link to={`/profile/${user.$id}`} className="flex-center flex-col gap-2">
         <img
-          src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
+          // src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
+          src={
+            user.imageUrl?.replace("/preview", "/view") ||
+            "/assets/icons/profile-placeholder.svg"
+          }
           alt="creator"
           className="rounded-full w-14 h-14"
         />
@@ -27,7 +29,6 @@ const UserCard = ({ user }: UserCardProps) => {
             @{user.username}
           </p>
         </div>
-
       </Link>
       <FollowingButton userToFollow={user} userIdToFollow={`${user.$id}`} />
     </div>

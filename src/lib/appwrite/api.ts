@@ -506,6 +506,42 @@ export async function getLikedPosts(userId: string) {
   }
 }
 
+// ============================== GET SAVED POSTS
+
+export async function getSavedPosts(userId: string) {
+  try {
+    const currentUser = await databases.getDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.userCollectionId,
+      userId,
+    );
+
+    if (!currentUser || !currentUser.save || currentUser.save.length === 0) {
+      return { documents: [] };
+    }
+
+    // 1. Extract the Post IDs from the "save" objects
+    // Structure: User -> Save -> Post
+    const savedPostIds = currentUser.save.map(
+      (saveDoc: any) => saveDoc.post.$id,
+    );
+
+    // 2. Fetch the Posts directly (This expands the Creator fully)
+    const posts = await databases.listDocuments(
+      appwriteConfig.databaseId,
+      appwriteConfig.postCollectionId,
+      [Query.equal("$id", savedPostIds), Query.orderDesc("$createdAt")],
+    );
+
+    if (!posts) throw Error;
+
+    return posts;
+  } catch (error) {
+    console.log(error);
+    return { documents: [] };
+  }
+}
+
 // ============================== GET POPULAR POSTS (BY HIGHEST LIKE COUNT)
 
 export async function getRecentPosts() {

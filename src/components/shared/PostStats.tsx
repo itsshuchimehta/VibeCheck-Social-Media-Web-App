@@ -1,14 +1,14 @@
 import { Models } from "appwrite";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-import { checkIsLiked } from "@/lib/utils";
 import {
-  useLikePost,
-  useSavePost,
   useDeleteSavedPost,
   useGetCurrentUser,
+  useLikePost,
+  useSavePost,
 } from "@/lib/react-query/queries";
+import { checkIsLiked } from "@/lib/utils";
 
 type PostStatsProps = {
   post: Models.Document;
@@ -17,7 +17,8 @@ type PostStatsProps = {
 
 const PostStats = ({ post, userId }: PostStatsProps) => {
   const location = useLocation();
-  const likesList = post.likes.map((user: Models.Document) => user.$id);
+
+  const likesList = post.likes?.map((user: Models.Document) => user.$id) || [];
 
   const [likes, setLikes] = useState<string[]>(likesList);
   const [isSaved, setIsSaved] = useState(false);
@@ -28,13 +29,17 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
 
   const { data: currentUser } = useGetCurrentUser();
 
-  const savedPostRecord = currentUser?.save.find(
+  const savedPostRecord = currentUser?.save?.find(
     (record: Models.Document) => record.post.$id === post.$id
   );
 
   useEffect(() => {
     setIsSaved(!!savedPostRecord);
   }, [currentUser]);
+
+  useEffect(() => {
+    setLikes(likesList);
+  }, [post.likes]);
 
   const handleLikePost = (
     e: React.MouseEvent<HTMLImageElement, MouseEvent>
@@ -73,7 +78,8 @@ const PostStats = ({ post, userId }: PostStatsProps) => {
 
   return (
     <div
-      className={`flex justify-between items-center z-20 ${containerStyles}`}>
+      className={`flex justify-between items-center z-20 ${containerStyles}`}
+    >
       <div className="flex gap-2 mr-5">
         <img
           src={`${

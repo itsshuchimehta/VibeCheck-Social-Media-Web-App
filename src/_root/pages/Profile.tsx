@@ -1,17 +1,18 @@
 import {
-  Route,
-  Routes,
   Link,
   Outlet,
-  useParams,
+  Route,
+  Routes,
   useLocation,
+  useParams,
 } from "react-router-dom";
 
-import { useState, useEffect } from "react";
 import { LikedPosts } from "@/_root/pages";
+import { FollowingButton, GridPostList, Loader } from "@/components/shared";
 import { useUserContext } from "@/context/AuthContext";
-import { useGetUserById } from "@/lib/react-query/queries";
-import { GridPostList, Loader, FollowingButton } from "@/components/shared";
+// import { useGetUserById } from "@/lib/react-query/queries";
+import { useGetUserById, useGetUserPosts } from "@/lib/react-query/queries";
+import { useEffect, useState } from "react";
 
 interface StabBlockProps {
   value: string | number;
@@ -32,26 +33,32 @@ const Profile = () => {
 
   const { data: currentUser } = useGetUserById(id || "");
 
-  const [followersCount, setFollowersCount] = useState(currentUser?.follower.length);
+  const { data: userPosts } = useGetUserPosts(id || "");
 
+  const [followersCount, setFollowersCount] = useState(
+    currentUser?.follower.length
+  );
+
+  // useEffect(() => {
+  //   if (currentUser) {
+  //     setFollowersCount(
+  //       followersCount ? followersCount : currentUser.follower.length
+  //     );
+  //   }
+  // }, [currentUser]);
   useEffect(() => {
     if (currentUser) {
-      setFollowersCount(followersCount ? followersCount : currentUser.follower.length);
+      setFollowersCount(currentUser.follower.length);
     }
   }, [currentUser]);
 
   const handleFollowersCountChange = (isFollowed: boolean) => {
-
     if (isFollowed) {
-      setFollowersCount(followersCount + 1)
+      setFollowersCount(followersCount + 1);
     } else {
-      setFollowersCount(followersCount - 1)
-
+      setFollowersCount(followersCount - 1);
     }
-
   };
-
-
 
   if (!currentUser)
     return (
@@ -65,8 +72,12 @@ const Profile = () => {
       <div className="profile-inner_container">
         <div className="flex xl:flex-row flex-col max-xl:items-center flex-1 gap-7">
           <img
+            // src={
+            //   currentUser.imageUrl || "/assets/icons/profile-placeholder.svg"
+            // }
             src={
-              currentUser.imageUrl || "/assets/icons/profile-placeholder.svg"
+              currentUser.imageUrl?.replace("/preview", "/view") ||
+              "/assets/icons/profile-placeholder.svg"
             }
             alt="profile"
             className="w-28 h-28 lg:h-36 lg:w-36 rounded-full"
@@ -84,7 +95,10 @@ const Profile = () => {
             <div className="flex gap-8 mt-10 items-center justify-center xl:justify-start flex-wrap z-20">
               <StatBlock value={currentUser.posts.length} label="Posts" />
               <StatBlock value={followersCount} label="Followers" />
-              <StatBlock value={currentUser.following.length} label="Following" />
+              <StatBlock
+                value={currentUser.following.length}
+                label="Following"
+              />
             </div>
 
             <p className="small-medium md:base-medium text-center xl:text-left mt-7 max-w-screen-sm">
@@ -96,8 +110,10 @@ const Profile = () => {
             <div className={`${user.id !== currentUser.$id && "hidden"}`}>
               <Link
                 to={`/update-profile/${currentUser.$id}`}
-                className={`h-12 bg-dark-4 px-5 text-light-1 flex-center gap-2 rounded-lg ${user.id !== currentUser.$id && "hidden"
-                  }`}>
+                className={`h-12 bg-dark-4 px-5 text-light-1 flex-center gap-2 rounded-lg ${
+                  user.id !== currentUser.$id && "hidden"
+                }`}
+              >
                 <img
                   src={"/assets/icons/edit.svg"}
                   alt="edit"
@@ -110,7 +126,11 @@ const Profile = () => {
               </Link>
             </div>
             <div className={`${user.id === id && "hidden"}`}>
-              <FollowingButton userToFollow={currentUser} userIdToFollow={`${id}`} onFollowChange={handleFollowersCountChange} />
+              <FollowingButton
+                userToFollow={currentUser}
+                userIdToFollow={`${id}`}
+                onFollowChange={handleFollowersCountChange}
+              />
             </div>
           </div>
         </div>
@@ -120,8 +140,10 @@ const Profile = () => {
         <div className="flex max-w-5xl w-full">
           <Link
             to={`/profile/${id}`}
-            className={`profile-tab rounded-l-lg ${pathname === `/profile/${id}` && "!bg-dark-3"
-              }`}>
+            className={`profile-tab rounded-l-lg ${
+              pathname === `/profile/${id}` && "!bg-dark-3"
+            }`}
+          >
             <img
               src={"/assets/icons/posts.svg"}
               alt="posts"
@@ -132,8 +154,10 @@ const Profile = () => {
           </Link>
           <Link
             to={`/profile/${id}/liked-posts`}
-            className={`profile-tab rounded-r-lg ${pathname === `/profile/${id}/liked-posts` && "!bg-dark-3"
-              }`}>
+            className={`profile-tab rounded-r-lg ${
+              pathname === `/profile/${id}/liked-posts` && "!bg-dark-3"
+            }`}
+          >
             <img
               src={"/assets/icons/like.svg"}
               alt="like"
@@ -148,7 +172,9 @@ const Profile = () => {
       <Routes>
         <Route
           index
-          element={<GridPostList posts={currentUser.posts} showUser={false} />}
+          element={
+            <GridPostList posts={userPosts?.documents || []} showUser={false} />
+          }
         />
         {currentUser.$id === user.id && (
           <Route path="/liked-posts" element={<LikedPosts />} />

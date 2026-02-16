@@ -1,11 +1,11 @@
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 
-import { INavLink } from "@/types";
-import { sidebarLinks } from "@/constants";
 import { Loader } from "@/components/shared";
 import { Button } from "@/components/ui/button";
+import { sidebarLinks } from "@/constants";
+import { INITIAL_USER, useUserContext } from "@/context/AuthContext";
 import { useSignOutAccount } from "@/lib/react-query/queries";
-import { useUserContext, INITIAL_USER } from "@/context/AuthContext";
+import { INavLink } from "@/types";
 
 const LeftSidebar = () => {
   const navigate = useNavigate();
@@ -43,7 +43,11 @@ const LeftSidebar = () => {
         ) : (
           <Link to={`/profile/${user.id}`} className="flex gap-3 items-center">
             <img
-              src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
+              // src={user.imageUrl || "/assets/icons/profile-placeholder.svg"}
+              src={
+                user.imageUrl?.replace("/preview", "/view") ||
+                "/assets/icons/profile-placeholder.svg"
+              }
               alt="profile"
               className="h-14 w-14 rounded-full"
             />
@@ -63,10 +67,12 @@ const LeftSidebar = () => {
                 key={link.label}
                 className={`leftsidebar-link group ${
                   isActive && "bg-primary-500"
-                }`}>
+                }`}
+              >
                 <NavLink
                   to={link.route}
-                  className="flex gap-4 items-center p-4">
+                  className="flex gap-4 items-center p-4"
+                >
                   <img
                     src={link.imgURL}
                     alt={link.label}
@@ -85,7 +91,8 @@ const LeftSidebar = () => {
       <Button
         variant="ghost"
         className="shad-button_ghost"
-        onClick={(e) => handleSignOut(e)}>
+        onClick={(e) => handleSignOut(e)}
+      >
         <img src="/assets/icons/logout.svg" alt="logout" />
         <p className="small-medium lg:base-medium">Logout</p>
       </Button>
