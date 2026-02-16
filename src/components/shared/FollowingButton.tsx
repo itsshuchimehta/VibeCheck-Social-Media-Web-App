@@ -1,88 +1,67 @@
-import { useState, useEffect } from 'react';
 import { useFollowUser, useGetCurrentUser } from "@/lib/react-query/queries";
-import { Button } from "../ui/button";
-import Loader from "@/components/shared/Loader";
 import { Models } from "appwrite";
+import { useEffect, useState } from "react";
+import { Button } from "../ui/button";
 
 type FollowButtonProps = {
-    userToFollow: Models.Document;
-    userIdToFollow: string;
-    onFollowChange?: (isFollowed: boolean) => void;
+  userToFollow: Models.Document;
+  userIdToFollow: string;
+  onFollowChange?: (isFollowed: boolean) => void;
 };
 
-const FollowingButton = ({ userToFollow, userIdToFollow, onFollowChange }: FollowButtonProps) => {
+const FollowingButton = ({
+  userIdToFollow,
+  onFollowChange,
+}: FollowButtonProps) => {
+  const { data: currentUser } = useGetCurrentUser();
+  // 1. Remove 'isLoading' - we don't want to know when it finishes
+  const { mutate: followUser } = useFollowUser();
 
-    const { data: currentUser } = useGetCurrentUser();
-    const { mutateAsync: followUser, isLoading } = useFollowUser();
+  const [isFollowing, setIsFollowing] = useState(false);
 
-    const [isFollowing, setIsFollowing] = useState(false);
-    const [followingList, setFollowingList] = useState<string[]>([]);
+  useEffect(() => {
+    // Sync initial state from DB
+    if (currentUser) {
+      // Safety check for null
+      const following = currentUser.following || [];
+      setIsFollowing(following.includes(userIdToFollow));
+    }
+  }, [currentUser, userIdToFollow]);
 
-    useEffect(() => {
-        if (currentUser) {
-            setFollowingList(currentUser.following || []);
-            setIsFollowing(currentUser.following.includes(userIdToFollow));
-        }
-    }, [currentUser, userIdToFollow]);
+  const handleFollowUser = (
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+  ) => {
+    e.stopPropagation();
 
-    const handleFollowUser = async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-        e.stopPropagation();
-        if (currentUser) {
-            let updatedFollowingList = [...followingList];
-            let updatedFollowList = [...userToFollow.follower];
+    if (!currentUser) return;
 
-            if (isFollowing) {
-                updatedFollowingList = updatedFollowingList.filter(id => id !== userIdToFollow);
-                updatedFollowList = updatedFollowList.filter(id => id !== currentUser.$id);
-            } else {
-                updatedFollowingList.push(userIdToFollow);
-                updatedFollowList.push(currentUser.$id);
-            }
+    // 2. Optimistic UI Update (Instant toggle)
+    const newStatus = !isFollowing;
+    setIsFollowing(newStatus);
+    onFollowChange && onFollowChange(newStatus);
 
-            // Update the state
-            setFollowingList(updatedFollowingList);
-            setIsFollowing(!isFollowing);
+    // 3. Fire and Forget
+    // The queue in api.ts ensures these execute in order (1->2->3)
+    // We do NOT await this. We let it run in the background.
+    followUser({
+      currentUserId: currentUser.$id,
+      userIdToFollow: userIdToFollow,
+    });
+  };
 
-            // Notify about follow/unfollow
-            onFollowChange && onFollowChange(!isFollowing);
-
-            try {
-
-                let result = await followUser({
-                    currentUserId: currentUser.$id,
-                    userIdToFollow: userIdToFollow,
-                    followingArray: updatedFollowingList,
-                    followerArray: updatedFollowList
-                });
-
-                if (!result) throw Error;
-
-            } catch (error) {
-                console.log({ error })
-            }
-
-
-        }
-    };
-    return (
-        <Button type="button"
-            size="sm"
-            className="shad-button_primary px-5"
-            onClick={handleFollowUser}
-            disabled={isLoading}>
-            {isLoading ? (
-                <div className="flex-center gap-2">
-                    <Loader /> Loading...
-                </div>
-            ) : isFollowing ? (
-                "Unfollow"
-            ) : (
-                'Follow'
-            )}
-        </Button>
-
-    );
+  return (
+    <Button
+      type="button"
+      size="sm"
+      className={`px-5 ${isFollowing ? "bg-dark-4" : "shad-button_primary"}`}
+      onClick={handleFollowUser}
+      // 4. CRITICAL: Never disable the button.
+      // Allow the user to toggle 10 times if they want.
+      // The queue will handle the 10 requests sequentially.
+    >
+      {isFollowing ? "Unfollow" : "Follow"}
+    </Button>
+  );
 };
 
-
-export default FollowingButton
+export default FollowingButton;

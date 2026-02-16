@@ -1,35 +1,36 @@
 import {
-  useQuery,
-  useMutation,
-  useQueryClient,
   useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
 
-import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import {
-  createUserAccount,
-  signInAccount,
-  getCurrentUser,
-  signOutAccount,
-  getUsers,
   createPost,
-  getPostById,
-  updatePost,
-  getUserPosts,
+  createUserAccount,
   deletePost,
-  likePost,
-  getUserById,
-  updateUser,
-  getRecentPosts,
-  getInfinitePosts,
-  searchPosts,
-  savePost,
   deleteSavedPost,
-  searchUsers,
   followUser,
-  SendRecoveryLink,
+  getCurrentUser,
+  getInfinitePosts,
+  getLikedPosts,
+  getPostById,
+  getRecentPosts,
+  getUserById,
+  getUserPosts,
+  getUsers,
+  likePost,
   ResetPassword,
+  savePost,
+  searchPosts,
+  searchUsers,
+  SendRecoveryLink,
+  signInAccount,
+  signOutAccount,
+  updatePost,
+  updateUser,
 } from "@/lib/appwrite/api";
+import { QUERY_KEYS } from "@/lib/react-query/queryKeys";
 import { INewPost, INewUser, IUpdatePost, IUpdateUser } from "@/types";
 
 // ============================================================
@@ -134,8 +135,15 @@ export const useUpdatePost = () => {
 export const useDeletePost = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ postId, imageId, saved }: { postId?: string; imageId: string; saved: any }) =>
-      deletePost(postId, imageId, saved),
+    mutationFn: ({
+      postId,
+      imageId,
+      saved,
+    }: {
+      postId?: string;
+      imageId: string;
+      saved: any;
+    }) => deletePost(postId, imageId, saved),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
@@ -176,6 +184,9 @@ export const useLikePost = () => {
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.GET_CURRENT_USER],
       });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_USER_POSTS],
+      });
     },
   });
 };
@@ -214,6 +225,14 @@ export const useDeleteSavedPost = () => {
         queryKey: [QUERY_KEYS.GET_CURRENT_USER],
       });
     },
+  });
+};
+
+export const useGetLikedPosts = (userId: string) => {
+  return useQuery({
+    queryKey: [QUERY_KEYS.GET_LIKED_POSTS, userId],
+    queryFn: () => getLikedPosts(userId),
+    enabled: !!userId,
   });
 };
 
@@ -266,36 +285,83 @@ export const useSearchUsers = (searchTerm: string) => {
   });
 };
 
+// export const useFollowUser = () => {
+//   const queryClient = useQueryClient();
+
+//   return useMutation({
+//     mutationFn: ({
+//       currentUserId,
+//       userIdToFollow,
+//       followingArray,
+//       followerArray,
+//     }: {
+//       currentUserId: string;
+//       userIdToFollow: string;
+//       followingArray: string[];
+//       followerArray: string[];
+//     }) =>
+//       followUser(currentUserId, userIdToFollow, followingArray, followerArray),
+//     onSuccess: () => {
+//       queryClient.invalidateQueries({
+//         queryKey: [QUERY_KEYS.GET_CURRENT_USER],
+//       });
+//       queryClient.invalidateQueries({
+//         queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
+//       });
+//       queryClient.invalidateQueries({
+//         queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
+//       });
+//     },
+//   });
+// };
 
 export const useFollowUser = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ currentUserId, userIdToFollow, followingArray, followerArray }: { currentUserId: string, userIdToFollow: string, followingArray: string[], followerArray: string[] }) => followUser(currentUserId, userIdToFollow, followingArray,followerArray),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey : [QUERY_KEYS.GET_CURRENT_USER]
-      })
-      queryClient.invalidateQueries({
-        queryKey : [QUERY_KEYS.GET_RECENT_POSTS]
-      })
-      queryClient.invalidateQueries({
-        queryKey : [QUERY_KEYS.GET_INFINITE_POSTS]
-      })
-    }
-  })
-}
+    mutationFn: ({
+      currentUserId,
+      userIdToFollow,
+    }: {
+      currentUserId: string;
+      userIdToFollow: string;
+    }) => followUser(currentUserId, userIdToFollow),
 
-export const useSendRecoveryLink = () => { 
-  return useMutation({
-    mutationFn: ({email}:{email:string}) =>
-    SendRecoveryLink(email),
+    onSuccess: () => {
+      // Keep your invalidations
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_CURRENT_USER],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_RECENT_POSTS],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_INFINITE_POSTS],
+      });
+      //Also refresh the specific user we just followed
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.GET_USER_BY_ID],
+      });
+    },
   });
-}
+};
+
+export const useSendRecoveryLink = () => {
+  return useMutation({
+    mutationFn: ({ email }: { email: string }) => SendRecoveryLink(email),
+  });
+};
 
 export const useResetPassword = () => {
   return useMutation({
-    mutationFn: ({ userId, secret, password }: {userId:string, secret:any, password:string }) =>
-      ResetPassword(userId, secret, password),
+    mutationFn: ({
+      userId,
+      secret,
+      password,
+    }: {
+      userId: string;
+      secret: any;
+      password: string;
+    }) => ResetPassword(userId, secret, password),
   });
-}
+};

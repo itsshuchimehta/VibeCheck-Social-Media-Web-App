@@ -17,4 +17,6 @@ export enum QUERY_KEYS {
 
   //  SEARCH KEYS
   SEARCH_POSTS = "getSearchPosts",
+  // LIKED POST
+  GET_LIKED_POSTS = "getLikedPosts",
 }
